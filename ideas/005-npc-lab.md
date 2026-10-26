@@ -1,5 +1,5 @@
 ---
-title: "Data Mine Lab"
+title: "NPC lab"
 status: spark
 owners: []
 issue: https://github.com/Rahulgandhi-dhanapal/spark-lab/issues/5
@@ -7,7 +7,7 @@ created: 2026-10-26
 updated: 2026-10-26
 ---
 
-# Data Mine Lab
+# NPC lab
 
 **The spark** (one or two lines)
 Having a data lab which collect unstructured data of Indian user what would be used by other companies to train their model, making better inference on their products.
