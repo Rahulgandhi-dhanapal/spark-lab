@@ -10,10 +10,13 @@ updated: 2026-10-26
 # NPC lab
 
 **The spark** (one or two lines)
-Having a data lab which collect unstructured data of Indian user what would be used by other companies to train their model, making better inference on their products.
+Let's create a agent or model that act as a NPC with full autonomy.
 
+Like we can feed particular persons psychology and habits to a agent and make it behave like him..like mirofish but for indian demographic 
 **Why it's interesting**
-In the new age of AI and digital, having access and method to obtain a data will be necessary.
+1. We can create a video where all kind of npc interact with each other like a bigboss - GTA GAME. Like give a task and see what agent is doing
+
+2. Prediction like if I release this product or service how Indian demographic people would react to that -market analysis
 
 **First step, if I were to try it**
 1. Try and learn about methods to collect a sector of data like food preference and habit of Indian people and make a inference from that
