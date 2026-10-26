@@ -14,7 +14,4 @@ Creating a youtube video where we post the daily vlog and cinematic video of wor
 
 **Why it's interesting**
 
-
-**First step, if I were to try it**
-
 I don't know what to create....
