@@ -1,0 +1,59 @@
+name: Sync ideas to Markdown
+
+on:
+  issues:
+    types: [opened, edited, closed, reopened, labeled, unlabeled, assigned, unassigned]
+  issue_comment:
+    types: [created, edited, deleted]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-ideas
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write idea file
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const { owner, repo } = context.repo;
+            const number = context.payload.issue.number;
+            if (context.payload.issue.pull_request) return;
+
+            const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: number });
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number: number, per_page: 100 });
+
+            const slug = issue.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50) || 'idea';
+            const file = `ideas/${String(number).padStart(3, '0')}-${slug}.md`;
+
+            // remove an older file for this issue if the title changed
+            for (const f of fs.readdirSync('ideas')) {
+              if (f.startsWith(String(number).padStart(3, '0') + '-') && `ideas/${f}` !== file) fs.unlinkSync(`ideas/${f}`);
+            }
+
+            const labels = issue.labels.map(l => typeof l === 'string' ? l : l.name);
+            const status = issue.state === 'closed' ? 'done'
+              : (labels.find(l => l.startsWith('status:')) || 'status:spark').replace('status:', '');
+            const q = s => JSON.stringify(s);
+
+            let md = `---\ntitle: ${q(issue.title)}\nstatus: ${status}\nowners: [${issue.assignees.map(a => a.login).join(', ')}]\nissue: ${issue.html_url}\ncreated: ${issue.created_at.slice(0, 10)}\nupdated: ${issue.updated_at.slice(0, 10)}\n---\n\n# ${issue.title}\n\n${issue.body || '_No description._'}\n`;
+            if (comments.length) {
+              md += `\n## Progress log\n`;
+              for (const c of comments) md += `\n### ${c.created_at.slice(0, 10)} · @${c.user.login}\n\n${c.body}\n`;
+            }
+            fs.writeFileSync(file, md);
+
+      - name: Commit changes
+        run: |
+          git config user.name "idea-sync[bot]"
+          git config user.email "idea-sync@users.noreply.github.com"
+          git add ideas
+          git diff --cached --quiet || (git commit -m "Sync idea #${{ github.event.issue.number }}" && git pull --rebase && git push)
