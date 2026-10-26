@@ -19,4 +19,4 @@ Like we can feed particular persons psychology and habits to a agent and make it
 2. Prediction like if I release this product or service how Indian demographic people would react to that -market analysis
 
 **First step, if I were to try it**
-1. Try and learn about methods to collect a sector of data like food preference and habit of Indian people and make a inference from that
+1. Try and learn about methods to collect about building small models and data need to make a anonymous decision about something
