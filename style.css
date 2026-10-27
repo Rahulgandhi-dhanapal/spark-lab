@@ -55,3 +55,11 @@ nav input{flex:1;min-width:140px;border-radius:8px}
 .reply textarea{width:100%;font:inherit;font-size:.9rem;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);resize:vertical}
 .ractions{display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-top:6px;font-size:.85rem}
 @media(max-width:520px){.kids{margin-left:4px;padding-left:8px}.cbody,.cacts,.reply{margin-left:0}}
+.thead{background:none;border:0;padding:0;cursor:pointer;display:block}
+.chead{cursor:pointer;user-select:none;border-radius:6px}
+.chead:hover .fold{color:var(--accent)}
+.cmt.shut{opacity:.75}
+.cmt.analysis.shut{padding-block:6px}
+.cbody.clamp{max-height:11em;overflow:hidden;-webkit-mask-image:linear-gradient(#000 60%,transparent);mask-image:linear-gradient(#000 60%,transparent)}
+.more{margin:4px 0 0 26px;font-size:.8rem;color:var(--accent);font-weight:600}
+@media(max-width:520px){.more{margin-left:0}}

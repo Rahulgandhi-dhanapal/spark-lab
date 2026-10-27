@@ -2,7 +2,8 @@ const C = window.IDEA_BOARD;
 const $ = id => document.getElementById(id);
 const API = `https://api.github.com/repos/${C.repo}`;
 let ideas = [], status = "", owner = "", me = null;
-const open = new Set(), collapsed = new Set(), threads = {}, drafts = {};
+const open = new Set(), collapsed = new Set(), unclamped = new Set(), hiddenThreads = new Set(), threads = {}, drafts = {};
+const LONG = 600; // characters of text before a comment starts as a preview
 
 // Replies are ordinary GitHub comments that start with a hidden marker, so the thread survives on GitHub too.
 const REPLY = /<!--\s*reply-to:\s*(\d+)\s*-->/, ANALYSIS = /<!--\s*spark-lab:analysis\s*-->/;
@@ -134,13 +135,15 @@ function commentHtml(node, n, depth) {
   const author = node.analysis
     ? `<span class="who bot">🤖 Claude</span><span class="tag">VC review</span>`
     : `<span class="who"><img src="${c.user.avatar_url}&s=36" alt="">${esc(c.user.login)}</span>`;
-  return `<div class="cmt${node.analysis ? " analysis" : ""}" data-c="${id}">
-    <div class="chead">
-      <button class="fold" data-fold="${id}" aria-label="${shut ? "Expand" : "Collapse"}">[${shut ? "+" : "–"}]</button>
+  const long = (c.body_text || c.body || "").length > LONG, clamp = long && !unclamped.has(id);
+  return `<div class="cmt${node.analysis ? " analysis" : ""}${shut ? " shut" : ""}" data-c="${id}">
+    <div class="chead" data-fold="${id}" title="${shut ? "Expand" : "Collapse"}">
+      <button class="fold" data-fold="${id}" aria-expanded="${!shut}" aria-label="${shut ? "Expand" : "Collapse"} comment">[${shut ? "+" : "–"}]</button>
       ${author}<span class="muted">${ago(c.created_at)}</span>
-      ${shut ? `<span class="muted">${count(node) ? count(node) + " repl" + (count(node) > 1 ? "ies" : "y") + " hidden" : "collapsed"}</span>` : ""}
+      ${shut ? `<span class="muted">${count(node) ? `+ ${count(node)} repl${count(node) > 1 ? "ies" : "y"} hidden` : "collapsed"}</span>` : ""}
     </div>
-    ${shut ? "" : `<div class="cbody">${bodyOf(node)}</div>
+    ${shut ? "" : `<div class="cbody${clamp ? " clamp" : ""}">${bodyOf(node)}</div>
+    ${long ? `<button class="more link" data-more="${id}">${clamp ? "Show more ▾" : "Show less ▴"}</button>` : ""}
     <div class="cacts">
       <button class="link" data-up="${id}">▲ ${c.reactions?.["+1"] || 0}</button>
       <button class="link" data-reply="${id}">Reply</button>
@@ -167,10 +170,10 @@ function threadHtml(n) {
   const t = threads[n];
   if (!t || t.loading) return `<p class="muted">Loading comments…</p>`;
   if (t.error) return `<p class="muted">${esc(t.error)}</p>`;
-  const roots = tree(t.list);
-  return `<h3 class="thead">${t.list.length} comment${t.list.length === 1 ? "" : "s"}</h3>
-    ${roots.map(r => commentHtml(r, n, 0)).join("") || `<p class="muted">No comments yet.</p>`}
-    ${replyBox(n, 0)}`;
+  const roots = tree(t.list), hid = hiddenThreads.has(String(n));
+  return `<button class="thead link" data-thread="${n}" aria-expanded="${!hid}">💬 ${t.list.length} comment${t.list.length === 1 ? "" : "s"} ${hid ? "▸" : "▾"}</button>
+    ${hid ? "" : `${roots.map(r => commentHtml(r, n, 0)).join("") || `<p class="muted">No comments yet.</p>`}
+    ${replyBox(n, 0)}`}`;
 }
 
 function paintThread(n) {
@@ -225,10 +228,19 @@ $("list").addEventListener("toggle", e => {
 }, true);
 
 $("list").addEventListener("click", async e => {
-  const b = e.target.closest("button");
+  if (e.target.closest("a")) return;
+  const b = e.target.closest("button, .chead");
   if (!b) return;
   const n = +b.closest(".thread")?.dataset.n;
-  if (b.dataset.fold) {
+  if (b.dataset.thread) {
+    const k = b.dataset.thread;
+    hiddenThreads.has(k) ? hiddenThreads.delete(k) : hiddenThreads.add(k);
+    paintThread(n);
+  } else if (b.dataset.more) {
+    const id = +b.dataset.more;
+    unclamped.has(id) ? unclamped.delete(id) : unclamped.add(id);
+    paintThread(n);
+  } else if (b.dataset.fold) {
     const id = +b.dataset.fold;
     collapsed.has(id) ? collapsed.delete(id) : collapsed.add(id);
     paintThread(n);
