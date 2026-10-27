@@ -1,6 +1,6 @@
 ---
 title: "Tamil deep-tech tutorials: build your own LLM, in Tamil"
-status: spark
+status: exploring
 owners: []
 issue: https://github.com/Rahulgandhi-dhanapal/spark-lab/issues/12
 created: 2026-10-27
@@ -88,4 +88,55 @@ Record episode 1, "What is an LLM? Explained in Tamil, with a tiny example you c
 - **Data Mine Lab:** episode 3 shows why Tamil data is scarce, which is a natural lead-in to consent-based Tamil data work later.
 
 **Next step:** write the script for episode 1 (5–7 minutes, no code), record it with a phone and a cheap lapel mic, and post it this week. Track the percentage of viewers who watch past 50%.
+
+
+### 2026-10-27 · @Rahulgandhi-dhanapal
+
+## 🎯 Plan: make this channel your career-advancement project
+
+Teaching is the fastest way to learn deeply, and every episode leaves public proof of skill. The aim is that in 6 months a hiring manager can open your GitHub and YouTube and see an applied-LLM engineer.
+
+### Target role
+**Applied AI / LLM engineer** (building products on top of models: fine-tuning, RAG, agents, evals). It's the most hireable path from where you are, and it matches the episodes.
+
+### Each episode produces three things
+1. **A Colab notebook on GitHub** with a clear README. This is portfolio proof.
+2. **A video** (Tamil or Tanglish). This shows communication, which most engineers lack.
+3. **A short written summary** (LinkedIn post or blog): "what I learned, what I got wrong".
+
+### Episode to skill to proof
+| Episodes | Skill you gain | Proof |
+|---|---|---|
+| 1-2 | Python, Colab, how LLMs work | Notebook + explainer |
+| 3 | Tokenizers, Tamil tokenization cost | Small benchmark repo (a publishable finding) |
+| 4-6 | Bigram, attention, tiny transformer (PyTorch) | `tiny-tamil-gpt` repo |
+| 7 | Training loops, data cleaning, loss curves | Trained model + write-up |
+| 8 | Fine-tuning (LoRA) on an open model | Fine-tuned Tamil model on Hugging Face |
+| 9 | Chatbot + RAG over Tamil text | Live demo |
+| 10 | Agents and evals | Agent repo, links to NPC Lab |
+
+### Rules that keep the learning real
+- **Learn first, then record.** Finish the notebook yourself before scripting the video.
+- **Check every script against a trusted source** (Karpathy's "Let's build GPT", the original papers). I can review scripts.
+- **Write a "what I got wrong" note** after each episode. It builds honesty and depth.
+- **Keep one benchmark or finding original.** "Tamil costs N times more tokens" with real numbers is something you can cite in interviews.
+
+### 90-day milestones
+- **Day 30:** 4 episodes out, 4 repos, a pinned GitHub profile README, a LinkedIn post per episode.
+- **Day 60:** episode 6 done (tiny transformer), tokenizer benchmark posted, shared in 5 college groups and with AI4Bharat.
+- **Day 90:** fine-tuned model on Hugging Face, first college workshop booked, resume rewritten around the repos.
+
+### Career moves this unlocks
+- **Resume:** replace "learning AI" with links to 3 working repos and a channel.
+- **Interviews:** you can explain attention and fine-tuning from memory because you taught them.
+- **Network:** invite Tamil AI folks and AI4Bharat contributors to comment or appear as guests.
+- **Paid work:** workshops, a Tamil cohort course, and freelance LocalAI projects (idea #8) all come from this credibility.
+
+### Weekly rhythm (about 12 hours)
+- Mon-Wed: study and build the notebook (6h)
+- Thu: script and rehearse (2h)
+- Fri-Sat: record and edit (3h)
+- Sun: post the video, a LinkedIn summary and 2 Shorts (1h)
+
+**First action:** create the GitHub repo `tamil-llm-from-scratch` with a README listing all 10 episodes, then start episode 1.
 
