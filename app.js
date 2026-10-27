@@ -8,6 +8,16 @@ const LONG = 600; // characters of text before a comment starts as a preview
 // Replies are ordinary GitHub comments that start with a hidden marker, so the thread survives on GitHub too.
 const REPLY = /<!--\s*reply-to:\s*(\d+)\s*-->/, ANALYSIS = /<!--\s*spark-lab:analysis\s*-->/;
 
+const svg = d => `<svg viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
+const I = {
+  up: svg('<path d="M12 5 5 13h4.5v6h5v-6H19z"/>'),
+  reply: svg('<path d="M10 8 5 12.5l5 4.5"/><path d="M5.5 12.5H14a5 5 0 0 1 5 5V19"/>'),
+  ext: svg('<path d="M14 5h5v5"/><path d="m19 5-8 8"/><path d="M18 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h4"/>'),
+  chat: svg('<path d="M5 18.5V6a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H8z"/>'),
+  chev: svg('<path d="m9 6 6 6-6 6"/>'),
+  gh: '<svg viewBox="0 0 16 16" aria-hidden="true" class="fill"><path d="M8 0a8 8 0 0 0-2.5 15.6c.4 0 .5-.2.5-.4v-1.4c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.4.7 0-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.5 7.5 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.8-3.6 4 .3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4A8 8 0 0 0 8 0z"/></svg>'
+};
+
 document.title = $("title").textContent = C.title;
 $("newIdea").href = `https://github.com/${C.repo}/issues/new/choose`;
 
@@ -46,8 +56,8 @@ const demo = () => {
 
 function authBar() {
   $("auth").innerHTML = me
-    ? `<span class="who"><img src="${me.avatar_url}&s=36" alt="">${esc(me.login)}</span> <button id="logout" class="link">disconnect</button>`
-    : `<button id="login" class="link">Connect GitHub to reply</button>`;
+    ? `<span class="user-pill"><img src="${me.avatar_url}&s=48" alt="">${esc(me.login)}<button id="logout" class="x" title="Disconnect" aria-label="Disconnect GitHub">×</button></span>`
+    : `<button id="login" class="btn ghost">${I.gh} Connect GitHub</button>`;
   if (me) $("logout").onclick = () => { store.set("ghToken", null); me = null; authBar(); render(); };
   else $("login").onclick = connect;
 }
@@ -60,12 +70,16 @@ async function connect() {
   authBar(); render();
 }
 
+function owners() {
+  const list = [...new Set(ideas.flatMap(i => i.assignees.map(a => a.login)))];
+  $("ownerFilter").innerHTML = `<option value="">Everyone</option>` + list.map(o => `<option>${esc(o)}</option>`).join("");
+}
+
 async function load() {
   if (C.repo.startsWith("YOUR-")) {
-    $("list").insertAdjacentHTML("beforebegin", `<p class="muted">Demo data. Set <code>repo</code> in config.js to use real issues.</p>`);
+    $("list").insertAdjacentHTML("beforebegin", `<p class="muted note">Demo data. Set <code>repo</code> in config.js to use real issues.</p>`);
     ideas = demo();
-    const owners = [...new Set(ideas.flatMap(i => i.assignees.map(a => a.login)))];
-    $("ownerFilter").innerHTML = `<option value="">Everyone</option>` + owners.map(o => `<option>${o}</option>`).join("");
+    owners();
     return render();
   }
   if (token()) { try { me = await gh("https://api.github.com/user"); } catch { me = null; } }
@@ -73,11 +87,10 @@ async function load() {
   try {
     ideas = (await gh("/issues?state=all&per_page=100")).filter(i => !i.pull_request);
   } catch (e) {
-    $("list").innerHTML = `<p class="muted">${e.message}</p>`;
+    $("list").innerHTML = `<p class="empty">${esc(e.message)}</p>`;
     return;
   }
-  const owners = [...new Set(ideas.flatMap(i => i.assignees.map(a => a.login)))];
-  $("ownerFilter").innerHTML = `<option value="">Everyone</option>` + owners.map(o => `<option>${o}</option>`).join("");
+  owners();
   render();
 }
 
@@ -98,9 +111,12 @@ async function loadThread(n) {
 }
 
 function filters() {
-  const el = $("statusFilters");
-  el.innerHTML = ["", ...C.statuses].map(s => `<button data-s="${s}" class="${s === status ? "on" : ""}">${s || "all"}</button>`).join(" ");
-  el.querySelectorAll("button").forEach(b => b.onclick = () => { status = b.dataset.s; render(); });
+  const count = s => s ? ideas.filter(i => statusOf(i) === s).length : ideas.length;
+  $("statusFilters").innerHTML = ["", ...C.statuses].map(s =>
+    `<button data-s="${s}" class="${s === status ? "on" : ""}" aria-pressed="${s === status}">${s ? `<i class="dot ${s}"></i>` : ""}${s || "All"}<span class="n">${count(s)}</span></button>`).join("");
+  $("statusFilters").querySelectorAll("button").forEach(b => b.onclick = () => { status = b.dataset.s; render(); });
+  const building = count("building");
+  $("tagline").textContent = ideas.length ? `${ideas.length} ideas · ${building} building · ${count("done")} shipped` : "Ideas worth chasing";
 }
 
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
@@ -129,50 +145,56 @@ function bodyOf(node) {
   return d.innerHTML;
 }
 
-function commentHtml(node, n, depth) {
-  const c = node.c, id = c.id, shut = collapsed.has(id);
-  const count = (x => x.kids.reduce((s, k) => s + 1 + count(k), 0));
-  const author = node.analysis
-    ? `<span class="who bot">🤖 Claude</span><span class="tag">VC review</span>`
-    : `<span class="who"><img src="${c.user.avatar_url}&s=36" alt="">${esc(c.user.login)}</span>`;
+const count = node => node.kids.reduce((s, k) => s + 1 + count(k), 0);
+
+function commentHtml(node, n) {
+  const c = node.c, id = c.id, shut = collapsed.has(id), kids = count(node);
   const long = (c.body_text || c.body || "").length > LONG, clamp = long && !unclamped.has(id);
+  const author = node.analysis
+    ? `<span class="av bot" aria-hidden="true">🤖</span><b>Claude</b><span class="tag">VC review</span>`
+    : `<img class="av" src="${c.user.avatar_url}&s=48" alt=""><b>${esc(c.user.login)}</b>`;
   return `<div class="cmt${node.analysis ? " analysis" : ""}${shut ? " shut" : ""}" data-c="${id}">
     <div class="chead" data-fold="${id}" title="${shut ? "Expand" : "Collapse"}">
-      <button class="fold" data-fold="${id}" aria-expanded="${!shut}" aria-label="${shut ? "Expand" : "Collapse"} comment">[${shut ? "+" : "–"}]</button>
-      ${author}<span class="muted">${ago(c.created_at)}</span>
-      ${shut ? `<span class="muted">${count(node) ? `+ ${count(node)} repl${count(node) > 1 ? "ies" : "y"} hidden` : "collapsed"}</span>` : ""}
+      ${author}<span class="time">${ago(c.created_at)}</span>
+      ${shut && kids ? `<span class="hidden-n">+${kids} repl${kids > 1 ? "ies" : "y"}</span>` : ""}
+      <button class="fold" data-fold="${id}" aria-expanded="${!shut}" aria-label="${shut ? "Expand" : "Collapse"} comment">${shut ? "+" : "−"}</button>
     </div>
     ${shut ? "" : `<div class="cbody${clamp ? " clamp" : ""}">${bodyOf(node)}</div>
-    ${long ? `<button class="more link" data-more="${id}">${clamp ? "Show more ▾" : "Show less ▴"}</button>` : ""}
+    ${long ? `<button class="more" data-more="${id}">${clamp ? "Read full review" : "Show less"} <span class="caret${clamp ? "" : " up"}">${I.chev}</span></button>` : ""}
     <div class="cacts">
-      <button class="link" data-up="${id}">▲ ${c.reactions?.["+1"] || 0}</button>
-      <button class="link" data-reply="${id}">Reply</button>
-      <a class="link" href="${c.html_url}" target="_blank" rel="noopener">GitHub ↗</a>
+      <button class="act vote" data-up="${id}" title="Upvote">${I.up}<b>${c.reactions?.["+1"] || 0}</b></button>
+      <button class="act" data-reply="${id}">${I.reply}Reply</button>
+      <a class="act" href="${c.html_url}" target="_blank" rel="noopener">${I.ext}GitHub</a>
     </div>
     ${drafts[id] != null ? replyBox(n, id) : ""}
-    ${node.kids.length ? `<div class="kids">${node.kids.map(k => commentHtml(k, n, depth + 1)).join("")}</div>` : ""}`}
+    ${node.kids.length ? `<div class="kids">${node.kids.map(k => commentHtml(k, n)).join("")}</div>` : ""}`}
   </div>`;
 }
 
 const draftKey = (n, parent) => parent || "top" + n;
 
 function replyBox(n, parent) {
-  return `<form class="reply" data-n="${n}" data-parent="${parent}">
-    <textarea rows="${parent ? 3 : 2}" placeholder="${parent ? "Write a reply… (Markdown works)" : "Add a comment…"}">${esc(drafts[draftKey(n, parent)] || "")}</textarea>
-    <div class="ractions">
-      ${parent ? `<button type="button" class="link" data-cancel="${parent}">Cancel</button>` : ""}
-      <button type="submit" class="btn small">${parent ? "Reply" : "Comment"}</button>
+  return `<form class="reply${parent ? "" : " top"}" data-n="${n}" data-parent="${parent}">
+    ${parent ? "" : me ? `<img class="av" src="${me.avatar_url}&s=48" alt="">` : `<span class="av blank" aria-hidden="true">${I.chat}</span>`}
+    <div class="rbox">
+      <textarea rows="${parent ? 3 : 2}" placeholder="${parent ? "Write a reply… (Markdown works)" : me ? "Add to the discussion…" : "Connect GitHub to join the discussion…"}">${esc(drafts[draftKey(n, parent)] || "")}</textarea>
+      <div class="ractions">
+        ${parent ? `<button type="button" class="btn ghost sm" data-cancel="${parent}">Cancel</button>` : ""}
+        <button type="submit" class="btn primary sm">${parent ? "Reply" : "Comment"}</button>
+      </div>
     </div>
   </form>`;
 }
 
 function threadHtml(n) {
   const t = threads[n];
-  if (!t || t.loading) return `<p class="muted">Loading comments…</p>`;
-  if (t.error) return `<p class="muted">${esc(t.error)}</p>`;
+  if (!t || t.loading) return `<div class="skeleton sm"></div><div class="skeleton sm"></div>`;
+  if (t.error) return `<p class="empty">${esc(t.error)}</p>`;
   const roots = tree(t.list), hid = hiddenThreads.has(String(n));
-  return `<button class="thead link" data-thread="${n}" aria-expanded="${!hid}">💬 ${t.list.length} comment${t.list.length === 1 ? "" : "s"} ${hid ? "▸" : "▾"}</button>
-    ${hid ? "" : `${roots.map(r => commentHtml(r, n, 0)).join("") || `<p class="muted">No comments yet.</p>`}
+  return `<button class="thead" data-thread="${n}" aria-expanded="${!hid}">
+      ${I.chat}<span>Discussion</span><span class="n">${t.list.length}</span><span class="caret${hid ? "" : " down"}">${I.chev}</span>
+    </button>
+    ${hid ? "" : `<div class="comments">${roots.map(r => commentHtml(r, n)).join("") || `<p class="muted quiet">No comments yet. Start the discussion.</p>`}</div>
     ${replyBox(n, 0)}`}`;
 }
 
@@ -191,18 +213,25 @@ function render() {
   $("list").innerHTML = rows.length ? rows.map(i => {
     const s = statusOf(i);
     const who = i.assignees.length
-      ? i.assignees.map(a => `<span class="who"><img src="${a.avatar_url}&s=36" alt="">${esc(a.login)}</span>`).join("")
-      : `<span>unclaimed</span>`;
-    return `<details class="card" data-id="${i.number ?? i.title}"${open.has(String(i.number ?? i.title)) ? " open" : ""}>
+      ? `<span class="stack">${i.assignees.map(a => `<img src="${a.avatar_url}&s=48" alt="${esc(a.login)}" title="${esc(a.login)}">`).join("")}</span>`
+      : `<span class="unclaimed">Unclaimed</span>`;
+    return `<details class="card s-${s}" data-id="${i.number ?? i.title}"${open.has(String(i.number ?? i.title)) ? " open" : ""}>
       <summary>
+        <div class="ctop">
+          ${i.number ? `<span class="num">#${i.number}</span>` : ""}
+          <span class="badge ${s}"><i class="dot ${s}"></i>${s}</span>
+          <span class="chev">${I.chev}</span>
+        </div>
         <h2>${esc(i.title)}</h2>
-        <div class="meta"><span class="badge ${s}">${s}</span>${who}<span>💬 ${i.comments}</span><span>${new Date(i.updated_at).toLocaleDateString()}</span></div>
+        <div class="meta">${who}<span class="mi">${I.chat}${i.comments}</span><span class="mi">${ago(i.updated_at)}</span></div>
       </summary>
-      <div class="body">${i.body_html || '<p class="muted">No description.</p>'}
-        <p><a href="${i.html_url}" target="_blank" rel="noopener">Open on GitHub ↗</a></p>
-        ${i.number ? `<div class="thread" data-n="${i.number}">${threadHtml(i.number)}</div>` : ""}</div>
+      <div class="body">
+        <div class="desc">${i.body_html || '<p class="muted">No description.</p>'}</div>
+        <a class="btn ghost sm" href="${i.html_url}" target="_blank" rel="noopener">${I.gh} Open issue</a>
+        ${i.number ? `<section class="thread" data-n="${i.number}">${threadHtml(i.number)}</section>` : ""}
+      </div>
     </details>`;
-  }).join("") : `<p class="muted">No ideas match.</p>`;
+  }).join("") : `<p class="empty">No ideas match. Try another filter.</p>`;
   for (const n of open) if (threads[n] === undefined && ideas.some(i => String(i.number) === n)) loadThread(+n);
 }
 
@@ -277,8 +306,8 @@ $("list").addEventListener("input", e => {
 $("list").addEventListener("submit", async e => {
   e.preventDefault();
   const f = e.target, text = f.querySelector("textarea").value.trim();
-  if (!text) return;
   if (!me) return connect();
+  if (!text) return;
   f.querySelector("[type=submit]").disabled = true;
   try { await post(+f.dataset.n, +f.dataset.parent, text); }
   catch (err) { alert(err.message); f.querySelector("[type=submit]").disabled = false; }

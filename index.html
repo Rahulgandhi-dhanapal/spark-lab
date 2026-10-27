@@ -4,19 +4,36 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Spark Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header>
-  <h1 id="title">Spark Lab</h1>
-  <div class="hright"><span id="auth"></span><a id="newIdea" class="btn" target="_blank" rel="noopener">+ Capture idea</a></div>
+<header class="top">
+  <div class="brand">
+    <div class="logo" aria-hidden="true">✦</div>
+    <div>
+      <h1 id="title">Spark Lab</h1>
+      <p id="tagline" class="sub">Ideas worth chasing</p>
+    </div>
+  </div>
+  <div class="hright">
+    <span id="auth"></span>
+    <a id="newIdea" class="btn primary" target="_blank" rel="noopener"><span aria-hidden="true">＋</span> Capture idea</a>
+  </div>
 </header>
-<nav>
-  <div id="statusFilters"></div>
-  <select id="ownerFilter"><option value="">Everyone</option></select>
-  <input id="search" type="search" placeholder="Search ideas…">
+<nav class="toolbar">
+  <div id="statusFilters" class="seg" role="group" aria-label="Filter by status"></div>
+  <div class="tools">
+    <label class="search">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="search" type="search" placeholder="Search ideas…" aria-label="Search ideas">
+    </label>
+    <select id="ownerFilter" class="select" aria-label="Filter by owner"><option value="">Everyone</option></select>
+  </div>
 </nav>
-<main id="list"><p class="muted">Loading…</p></main>
+<main id="list"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></main>
 <script src="config.js"></script>
 <script src="app.js"></script>
 </body>
