@@ -5,6 +5,7 @@ on:
     types: [opened, edited, closed, reopened, labeled, unlabeled, assigned, unassigned]
   issue_comment:
     types: [created, edited, deleted]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -19,16 +20,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Write idea file
+      - name: Write idea files
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
             const { owner, repo } = context.repo;
-            const number = context.payload.issue.number;
-            if (context.payload.issue.pull_request) return;
+            fs.mkdirSync('ideas', { recursive: true });
 
-            const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: number });
+            // Rewrite every idea, not just the one in the event: queued runs get cancelled
+            // when several events arrive at once, and this way the next run catches up.
+            const issues = (await github.paginate(github.rest.issues.listForRepo, { owner, repo, state: 'all', per_page: 100 }))
+              .filter(i => !i.pull_request);
+            for (const issue of issues) {
+            const number = issue.number;
             const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number: number, per_page: 100 });
 
             const slug = issue.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50) || 'idea';
@@ -50,10 +55,11 @@ jobs:
               for (const c of comments) md += `\n### ${c.created_at.slice(0, 10)} · @${c.user.login}\n\n${c.body}\n`;
             }
             fs.writeFileSync(file, md);
+            }
 
       - name: Commit changes
         run: |
           git config user.name "idea-sync[bot]"
           git config user.email "idea-sync@users.noreply.github.com"
           git add ideas
-          git diff --cached --quiet || (git commit -m "Sync idea #${{ github.event.issue.number }}" && git pull --rebase && git push)
+          git diff --cached --quiet || (git commit -m "Sync ideas (${{ github.event.issue.number && format('#{0}', github.event.issue.number) || 'all' }})" && git pull --rebase && git push)
