@@ -14,6 +14,15 @@ Ideas = GitHub Issues. This site just displays them.
 - Claim: assign the issue to yourself.
 - Progress: change the status label; discuss in comments; close when done.
 
+## Discussion threads
+Expand an idea to see its comments as a Reddit-style thread: nested replies, `[–]` to collapse, ▲ to upvote (a 👍 reaction on GitHub).
+To reply or upvote from the board, click **Connect GitHub to reply** and paste a fine-grained token
+(GitHub → Settings → Developer settings → Fine-grained tokens → only this repo → Issues: Read and write).
+The token stays in that browser's local storage and is only sent to api.github.com.
+
+Replies are normal issue comments that start with a hidden `<!-- reply-to: COMMENT_ID -->` marker, so nothing breaks on GitHub.
+Comments starting with `<!-- spark-lab:analysis -->` are pinned to the top and shown as "🤖 Claude · VC review".
+
 Note: unauthenticated GitHub API allows 60 requests/hour per visitor, plenty for this.
 
 ## Markdown backup / progress log
