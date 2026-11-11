@@ -1,0 +1,98 @@
+{
+  "name": "Emotion Shorts Pipeline",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "readFile",
+        "filePath": "={{ $json.spec_path || 'D:\\\\Project-video\\\\specs\\\\sunrise_guilt.json' }}",
+        "options": {}
+      },
+      "id": "read_spec",
+      "name": "1. Read Spec JSON",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [460, 300],
+      "notes": "Reads the spec JSON for the short to build. Set spec_path in the trigger or it defaults to sunrise_guilt.json."
+    },
+    {
+      "parameters": {
+        "jsCode": "const spec = JSON.parse($input.first().binary.data.toString());\nconst scenes = spec.scenes;\nconst source = spec.source;\n\n// Validate\nif (!scenes || scenes.length < 2) throw new Error('Need at least 2 scenes');\nif (!source) throw new Error('No source file in spec');\n\n// Check source file exists\nconst fs = require('fs');\nconst path = require('path');\nconst root = 'D:\\\\Project-video';\nconst srcPath = path.resolve(root, source);\nif (!fs.existsSync(srcPath)) throw new Error(`Source not found: ${srcPath}`);\n\nreturn [{ json: { ...spec, _root: root, _srcPath: srcPath } }];"
+      },
+      "id": "validate",
+      "name": "2. Validate Spec",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300],
+      "notes": "Parses the spec, checks that the source video exists, and validates minimum scene count."
+    },
+    {
+      "parameters": {
+        "command": "={{ (() => {\n  const spec = $json;\n  const root = spec._root;\n  const src = spec._srcPath;\n  const scenes = spec.scenes;\n  const layout = spec.layout || 'blur';\n  \n  // Build ffmpeg command for scene extraction + concat\n  let inputs = '';\n  let filters = '';\n  const W = 1080, H = 1920, FPS = 30;\n  \n  scenes.forEach((sc, i) => {\n    const parts = sc.start.split(':').map(Number);\n    let startSec = 0;\n    parts.forEach(p => { startSec = startSec * 60 + p; });\n    const eParts = sc.end.split(':').map(Number);\n    let endSec = 0;\n    eParts.forEach(p => { endSec = endSec * 60 + p; });\n    const dur = endSec - startSec;\n    \n    inputs += ` -ss ${startSec} -t ${dur} -i \"${src}\"`;\n    \n    if (layout === 'crop') {\n      filters += `[${i}:v]scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},fps=${FPS},setsar=1,format=yuv420p[v${i}];`;\n    } else {\n      filters += `[${i}:v]split[a${i}][b${i}];[a${i}]scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},boxblur=30:5,eq=brightness=-0.12[bg${i}];[b${i}]scale=${W}:-2[fg${i}];[bg${i}][fg${i}]overlay=(W-w)/2:(H-h)/2,fps=${FPS},setsar=1,format=yuv420p[v${i}];`;\n    }\n    filters += `[${i}:a]aresample=48000,aformat=channel_layouts=stereo,atrim=0:${dur},asetpts=N/SR/TB[a${i}];`;\n  });\n  \n  const n = scenes.length;\n  const concatInputs = Array.from({length: n}, (_, i) => `[v${i}][a${i}]`).join('');\n  filters += `${concatInputs}concat=n=${n}:v=1:a=1[v][a]`;\n  \n  const outPath = `${root}\\\\out\\\\${spec.id}_base.mp4`;\n  return `ffmpeg -y -v error${inputs} -filter_complex \"${filters}\" -map \"[v]\" -map \"[a]\" -c:v libx264 -preset fast -crf 18 -c:a aac \"${outPath}\"`;\n})() }}"
+      },
+      "id": "cut_scenes",
+      "name": "3. Cut & Crop Scenes",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [900, 300],
+      "notes": "Extracts scenes from the source film, crops/fits to 9:16, and concatenates into a base clip."
+    },
+    {
+      "parameters": {
+        "command": "={{ (() => {\n  const spec = $json;\n  const root = spec._root;\n  const python = 'python';\n  return `cd /d \"${root}\" && ${python} spark_shorts.py make specs/${spec.id}.json`;\n})() }}"
+      },
+      "id": "render_final",
+      "name": "4. Render Final (subtitles + music + voiceover)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1120, 300],
+      "notes": "Runs the full spark_shorts.py pipeline: burns subtitles, mixes music with sidechain compression, adds voiceover, outputs final MP4 + metadata."
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nconst path = require('path');\nconst spec = $json;\nconst root = spec._root;\nconst outMp4 = path.join(root, 'out', `${spec.id}.mp4`);\nconst outTxt = path.join(root, 'out', `${spec.id}.txt`);\n\nconst mp4Exists = fs.existsSync(outMp4);\nconst txtExists = fs.existsSync(outTxt);\nconst metadata = txtExists ? fs.readFileSync(outTxt, 'utf-8') : '';\nconst stats = mp4Exists ? fs.statSync(outMp4) : null;\n\nreturn [{\n  json: {\n    id: spec.id,\n    theme: spec.theme,\n    film: spec.film,\n    output_mp4: outMp4,\n    output_txt: outTxt,\n    file_size_mb: stats ? (stats.size / 1024 / 1024).toFixed(1) : 'N/A',\n    metadata_preview: metadata.substring(0, 500),\n    success: mp4Exists\n  }\n}];"
+      },
+      "id": "verify",
+      "name": "5. Verify Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 300],
+      "notes": "Checks that the final MP4 and metadata text file were created, reports file size and metadata preview."
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [{"node": "1. Read Spec JSON", "type": "main", "index": 0}]
+      ]
+    },
+    "1. Read Spec JSON": {
+      "main": [
+        [{"node": "2. Validate Spec", "type": "main", "index": 0}]
+      ]
+    },
+    "2. Validate Spec": {
+      "main": [
+        [{"node": "4. Render Final (subtitles + music + voiceover)", "type": "main", "index": 0}]
+      ]
+    },
+    "4. Render Final (subtitles + music + voiceover)": {
+      "main": [
+        [{"node": "5. Verify Output", "type": "main", "index": 0}]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "instanceId": "spark-lab-shorts"
+  }
+}

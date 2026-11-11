@@ -1,0 +1,8 @@
+input/*
+music/*
+out/*
+work/
+!input/.gitkeep
+!music/.gitkeep
+!out/.gitkeep
+!music/README.md

@@ -1,0 +1,30 @@
+{
+  "id": "sunrise_heartbreak",
+  "theme": "heartbreak",
+  "mood": "sad",
+  "film": "Sunrise: A Song of Two Humans",
+  "year": 1927,
+  "source_url": "https://archive.org/details/Sunrise1927",
+  "copyright_basis": "public_domain",
+  "risk": "pre-1929 US film, public domain",
+  "source": "input/sunrise_1927.mp4",
+  "layout": "blur",
+  "hook": "She trusted him with her life on that boat...",
+  "take": "The moment she realized what he almost did — that look breaks you.",
+  "scenes": [
+    {"start": "0:20:00", "end": "0:20:06", "note": "Boat ride begins, she trusts him"},
+    {"start": "0:22:00", "end": "0:22:05", "note": "He almost does it, stops himself"},
+    {"start": "0:22:30", "end": "0:22:36", "note": "She runs away terrified"},
+    {"start": "0:23:00", "end": "0:23:06", "note": "His face when he realizes what he nearly did"}
+  ],
+  "subtitles": [
+    "She held his hand on the boat. She had no idea.",
+    "He reached for her. Then stopped.",
+    "She saw it in his eyes.",
+    "She ran. He couldn't move."
+  ],
+  "question": "Would you ever trust that person again?",
+  "music_volume": 0.35,
+  "original_audio_volume": 0.6,
+  "hashtags": ["#heartbreak", "#trust", "#sunrise1927", "#silentfilm"]
+}

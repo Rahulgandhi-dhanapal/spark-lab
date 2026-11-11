@@ -1,0 +1,85 @@
+{
+  "name": "Batch Render All Specs",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nconst path = require('path');\nconst specsDir = 'D:\\\\Project-video\\\\specs';\nconst files = fs.readdirSync(specsDir).filter(f => f.endsWith('.json'));\n\nreturn files.map(f => ({\n  json: {\n    spec_file: f,\n    spec_path: path.join(specsDir, f),\n    id: f.replace('.json', '')\n  }\n}));"
+      },
+      "id": "list_specs",
+      "name": "1. List All Specs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300],
+      "notes": "Scans the specs/ folder and emits one item per JSON spec file."
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nconst path = require('path');\nconst spec = JSON.parse(fs.readFileSync($json.spec_path, 'utf-8'));\nconst outMp4 = path.join('D:\\\\Project-video\\\\out', `${spec.id}.mp4`);\n\nif (fs.existsSync(outMp4)) {\n  return []; // already rendered, skip\n}\n\nreturn [{ json: { ...spec, _spec_path: $json.spec_path } }];"
+      },
+      "id": "filter_new",
+      "name": "2. Skip Already Rendered",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300],
+      "notes": "Only passes through specs whose output MP4 doesn't exist yet."
+    },
+    {
+      "parameters": {
+        "command": "={{ `cd /d \"D:\\\\Project-video\" && python spark_shorts.py make specs/${$json.id}.json` }}"
+      },
+      "id": "render",
+      "name": "3. Render Short",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [900, 300],
+      "notes": "Runs spark_shorts.py make for each spec."
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nconst path = require('path');\nconst outDir = 'D:\\\\Project-video\\\\out';\nconst files = fs.readdirSync(outDir).filter(f => f.endsWith('.mp4'));\n\nreturn [{\n  json: {\n    total_shorts: files.length,\n    files: files,\n    message: `${files.length} shorts ready in out/ folder`\n  }\n}];"
+      },
+      "id": "summary",
+      "name": "4. Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300],
+      "notes": "Reports how many shorts are now in the out/ folder."
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [{"node": "1. List All Specs", "type": "main", "index": 0}]
+      ]
+    },
+    "1. List All Specs": {
+      "main": [
+        [{"node": "2. Skip Already Rendered", "type": "main", "index": 0}]
+      ]
+    },
+    "2. Skip Already Rendered": {
+      "main": [
+        [{"node": "3. Render Short", "type": "main", "index": 0}]
+      ]
+    },
+    "3. Render Short": {
+      "main": [
+        [{"node": "4. Summary", "type": "main", "index": 0}]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "instanceId": "spark-lab-shorts-batch"
+  }
+}

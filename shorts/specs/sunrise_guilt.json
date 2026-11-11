@@ -1,0 +1,30 @@
+{
+  "id": "sunrise_guilt",
+  "theme": "betrayal",
+  "mood": "sad",
+  "film": "Sunrise: A Song of Two Humans",
+  "year": 1927,
+  "source_url": "https://archive.org/details/Sunrise1927",
+  "copyright_basis": "public_domain",
+  "risk": "pre-1929 US film, public domain",
+  "source": "input/sunrise_1927.mp4",
+  "layout": "blur",
+  "hook": "He planned to drown his own wife...",
+  "take": "The guilt on his face says everything. He chose temptation, and it almost destroyed them both.",
+  "scenes": [
+    {"start": "0:10:00", "end": "0:10:06", "note": "City Woman seduces him"},
+    {"start": "0:12:30", "end": "0:12:36", "note": "She suggests murder, his face shows horror"},
+    {"start": "0:15:00", "end": "0:15:06", "note": "Returns home to innocent wife"},
+    {"start": "0:22:00", "end": "0:22:06", "note": "On the boat, he almost does it"}
+  ],
+  "subtitles": [
+    "She whispered: leave your wife, come to the city.",
+    "He couldn't look at her the same way.",
+    "On that boat ride, he almost did it.",
+    "But something stopped him."
+  ],
+  "question": "Could you forgive someone who thought about it?",
+  "music_volume": 0.35,
+  "original_audio_volume": 0.6,
+  "hashtags": ["#sunrise1927", "#betrayal", "#guilt", "#silentfilm"]
+}
